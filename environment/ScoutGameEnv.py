@@ -9,6 +9,7 @@ import tqdm
 from tensordict.nn import TensorDictModule
 from tensordict.tensordict import TensorDict, TensorDictBase
 from torch import nn
+from torchrl.data import TensorSpec, CompositeSpec, BinaryDiscreteTensorSpec
 from torchrl.envs.libs.vmas import VmasEnv
 from torchrl.envs import (
     CatTensors,
@@ -25,20 +26,27 @@ from itertools import combinations
 class ScoutGameEnv(EnvBase):
     def __init__(self, device='cpu'):
         super(ScoutGameEnv, self).__init__()
-        # define the meta data
-        self.device = device
-        self.dtype = np.float32
 
-        # 定義這裡的狀態空間和動作空間
-        # 例如，使用 spaces.Discrete 或 spaces.MultiBinary
-        self.state_size = 2
-        self.agent_num = 4
+        # 动作类型
+        action_type_spec = BinaryDiscreteTensorSpec()
 
-        card_space = GymEnv.spaces.Discrete(45)
-        player_hand_space = spaces.MultiDiscrete([45] * 11)
-        self.players_space = spaces.Tuple([player_hand_space] * 4)
+        # 出牌参数
+        play_cards_spec = TensorSpec(shape=(11,), dtype=torch.int64, minimum=0, maximum=1)
 
-        self.player_hands = [[] for _ in range(4)]
+        # 換牌参数
+        exchange_card_spec = CompositeSpec(
+            exchange_choice=TensorSpec(shape=(), dtype=torch.int64, minimum=0, maximum=1),
+            play_after_exchange=TensorSpec(shape=(12,), dtype=torch.int64, minimum=0, maximum=1)
+        )
+
+        # 整个动作空间
+        action_space_spec = CompositeSpec(
+            action_type=action_type_spec,
+            play_action=play_cards_spec,
+            exchange_action=exchange_card_spec
+        )
+
+
 
     def _step(self, td: tensordict):
         """
