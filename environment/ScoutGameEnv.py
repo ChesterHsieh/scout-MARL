@@ -1,26 +1,17 @@
 import random
+from itertools import combinations
 
-from tensordict import tensordict
-from collections import defaultdict
-from typing import Optional
-import numpy as np
 import torch
-import tqdm
-from tensordict.nn import TensorDictModule
-from tensordict.tensordict import TensorDict, TensorDictBase
-from torch import nn
-from torchrl.data import TensorSpec, CompositeSpec, BinaryDiscreteTensorSpec
-from torchrl.envs.libs.vmas import VmasEnv
+from tensordict import tensordict
+from tensordict.tensordict import TensorDict
+from torchrl.data import CompositeSpec, BinaryDiscreteTensorSpec
 from torchrl.envs import (
-    CatTensors,
     EnvBase,
-    Transform,
-    TransformedEnv,
-    UnsqueezeTransform,
 )
 
 from environment.ScoutConst import ActionType
-from itertools import combinations
+
+FOUR_PPL_GAME_CARD_NUMS = 44
 
 
 class ScoutGameEnv(EnvBase):
@@ -28,25 +19,25 @@ class ScoutGameEnv(EnvBase):
         super(ScoutGameEnv, self).__init__()
 
         # 动作类型
-        action_type_spec = BinaryDiscreteTensorSpec()
+        action_type_spec = BinaryDiscreteTensorSpec(n=2, device=self.device)
 
         # 出牌参数
-        play_cards_spec = TensorSpec(shape=(11,), dtype=torch.int64, minimum=0, maximum=1)
+        play_cards_spec = BinaryDiscreteTensorSpec(n=11, device=self.device)
 
         # 換牌参数
         exchange_card_spec = CompositeSpec(
-            exchange_choice=TensorSpec(shape=(), dtype=torch.int64, minimum=0, maximum=1),
-            play_after_exchange=TensorSpec(shape=(12,), dtype=torch.int64, minimum=0, maximum=1)
+            exchange_choice=BinaryDiscreteTensorSpec(n=2, device=device),
+            play_after_exchange=BinaryDiscreteTensorSpec(n=12, device=device)
         )
 
-        # 整个动作空间
-        action_space_spec = CompositeSpec(
+        # 整个动作空间 not sure if it could be CompositeSpec, sinc
+        self.action_space_spec = CompositeSpec(
             action_type=action_type_spec,
             play_action=play_cards_spec,
             exchange_action=exchange_card_spec
         )
 
-
+        self.state_spec = BinaryDiscreteTensorSpec(n=44, shape=torch.Size((4, 44)), device=device)
 
     def _step(self, td: tensordict):
         """
@@ -89,16 +80,16 @@ class ScoutGameEnv(EnvBase):
         cards = list(combinations(range(1, 11), 2))
         cards.remove((9, 10))  # 移除 (9, 10) 組合
 
-        random.shuffle(cards)
-        player_hands = [[] for i in range(4)]
-        for i in range(4):  # 四名玩家
-            player_hands[i] = list(zip(*cards[i * 11:(i + 1) * 11]))
-
-        init_td = TensorDict({}, batch_size=torch.Size())
-        for agent in self
-
-        init_td.set('observation',torch.tensor(self.state.flatten()), device = self.device))
-        return td
+        # random.shuffle(cards)
+        # player_hands = [[] for i in range(4)]
+        # for i in range(4):  # 四名玩家
+        #     player_hands[i] = list(zip(*cards[i * 11:(i + 1) * 11]))
+        #
+        # init_td = TensorDict({}, batch_size=torch.Size())
+        # for agent in self
+        #
+        # init_td.set('observation', torch.tensor(self.state.flatten()), device=self.device))
+        # return td
 
     def _set_seed(self):
         pass

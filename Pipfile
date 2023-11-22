@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 torchrl = "*"
 tqdm = "*"
+jupyter = "*"
 
 [dev-packages]
 
